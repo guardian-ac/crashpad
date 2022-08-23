@@ -78,6 +78,10 @@ class CrashReportExceptionHandler final
       WinVMAddress exception_information_address,
       WinVMAddress debug_critical_section_address) override;
 
+  using OnCrashHandler = void (*)();
+
+  static void SetOnCrashHandler(OnCrashHandler handler);
+
  private:
   CrashReportDatabase* database_;  // weak
   CrashReportUploadThread* upload_thread_;  // weak

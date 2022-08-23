@@ -65,6 +65,8 @@ const int kRetryAttempts = 5;
 
 }  // namespace
 
+CrashReportUploadThread::OnUploadedReportHandler on_uploaded_report_handler_ = nullptr;
+
 CrashReportUploadThread::CrashReportUploadThread(CrashReportDatabase* database,
                                                  const std::string& url,
                                                  const Options& options)
@@ -215,6 +217,11 @@ void CrashReportUploadThread::ProcessPendingReport(
   std::string response_body;
   UploadResult upload_result =
       UploadReport(upload_report.get(), &response_body);
+
+  if (on_uploaded_report_handler_) {
+    on_uploaded_report_handler_(upload_result, response_body);
+  }
+
   switch (upload_result) {
     case UploadResult::kSuccess:
       database_->RecordUploadComplete(std::move(upload_report), response_body);
@@ -399,5 +406,10 @@ bool CrashReportUploadThread::ShouldRateLimitRetry(
   return false;
 }
 #endif
+
+void CrashReportUploadThread::SetOnUploadedReportHandler(
+    OnUploadedReportHandler handler) {
+  on_uploaded_report_handler_ = handler;
+}
 
 }  // namespace crashpad

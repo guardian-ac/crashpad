@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <versionhelpers.h>
 #include <wchar.h>
 #include <winhttp.h>
 
@@ -166,6 +167,16 @@ bool HTTPTransportWin::ExecuteSynchronously(std::string* response_body) {
                           timeout_in_ms)) {
     LOG(ERROR) << WinHttpMessage("WinHttpSetTimeouts");
     return false;
+  }
+
+  // On Windows 7, request will fail if we don't exclusively specify TLSv1.2
+  if (!IsWindows8Point1OrGreater()) {
+    DWORD protocols = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+
+    WinHttpSetOption(session.get(),
+                     WINHTTP_OPTION_SECURE_PROTOCOLS,
+                     &protocols,
+                     sizeof(protocols));
   }
 
   URL_COMPONENTS url_components = {0};

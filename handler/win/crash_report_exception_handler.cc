@@ -33,6 +33,8 @@
 
 namespace crashpad {
 
+CrashReportExceptionHandler::OnCrashHandler on_crash_handler_ = nullptr;
+
 CrashReportExceptionHandler::CrashReportExceptionHandler(
     CrashReportDatabase* database,
     CrashReportUploadThread* upload_thread,
@@ -80,6 +82,10 @@ unsigned int CrashReportExceptionHandler::ExceptionHandlerServerException(
   CrashpadInfoClientOptions client_options;
   process_snapshot.GetCrashpadOptions(&client_options);
   if (client_options.crashpad_handler_behavior != TriState::kDisabled) {
+    if (on_crash_handler_) {
+      on_crash_handler_();
+    }
+
     UUID client_id;
     Settings* const settings = database_->GetSettings();
     if (settings && settings->GetClientID(&client_id)) {
@@ -149,6 +155,10 @@ unsigned int CrashReportExceptionHandler::ExceptionHandlerServerException(
 
   Metrics::ExceptionCaptureResult(Metrics::CaptureResult::kSuccess);
   return termination_code;
+}
+
+void CrashReportExceptionHandler::SetOnCrashHandler(OnCrashHandler handler) {
+  on_crash_handler_ = handler;
 }
 
 }  // namespace crashpad

@@ -63,6 +63,26 @@ class CrashReportUploadThread : public WorkerThread::Delegate,
     bool watch_pending_reports;
   };
 
+  //! \brief The result code from UploadReport().
+  enum class UploadResult {
+    //! \brief The crash report was uploaded successfully.
+    kSuccess,
+
+    //! \brief The crash report upload failed in such a way that recovery is
+    //!     impossible.
+    //!
+    //! No further upload attempts should be made for the report.
+    kPermanentFailure,
+
+    //! \brief The crash report upload failed, but it might succeed again if
+    //!     retried in the future.
+    //!
+    //! If the report has not already been retried too many times, the caller
+    //! may arrange to call UploadReport() for the report again in the future,
+    //! after a suitable delay.
+    kRetry,
+  };
+
   //! \brief Constructs a new object.
   //!
   //! \param[in] database The database to upload crash reports from.
@@ -111,26 +131,11 @@ class CrashReportUploadThread : public WorkerThread::Delegate,
   //! \return `true` if the thread is running, `false` if it is not.
   bool is_running() const { return thread_.is_running(); }
 
+  using OnUploadedReportHandler = void (*)(CrashReportUploadThread::UploadResult, const std::string&);
+
+  static void SetOnUploadedReportHandler(OnUploadedReportHandler handler);
+
  private:
-  //! \brief The result code from UploadReport().
-  enum class UploadResult {
-    //! \brief The crash report was uploaded successfully.
-    kSuccess,
-
-    //! \brief The crash report upload failed in such a way that recovery is
-    //!     impossible.
-    //!
-    //! No further upload attempts should be made for the report.
-    kPermanentFailure,
-
-    //! \brief The crash report upload failed, but it might succeed again if
-    //!     retried in the future.
-    //!
-    //! If the report has not already been retried too many times, the caller
-    //! may arrange to call UploadReport() for the report again in the future,
-    //! after a suitable delay.
-    kRetry,
-  };
 
   //! \brief Calls ProcessPendingReport() on pending reports.
   //!
